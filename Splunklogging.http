@@ -1,0 +1,6 @@
+@Splunklogging_HostAddress = http://localhost:5084
+
+GET {{Splunklogging_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
