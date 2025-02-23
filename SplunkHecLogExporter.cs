@@ -30,6 +30,12 @@ public class SplunkHecLogExporter : BaseExporter<LogRecord>
 
             foreach (var log in batch)
             {
+                string eventId = log.EventId.ToString();
+                string traceId = log.TraceId.ToString();
+                string spanId = log.SpanId.ToString();
+                string methodName = log.Attributes?.FirstOrDefault(x => x.Key == "methodname").Value?.ToString() ?? string.Empty;
+                string filePath = log.Attributes?.FirstOrDefault(x => x.Key == "filePath").Value?.ToString() ?? string.Empty;
+                string className = log.Attributes?.FirstOrDefault(x => x.Key == "classname").Value?.ToString() ?? string.Empty;
                 var splunkEvent = new SplunkEvent
                 {
                     Time = new DateTimeOffset(log.Timestamp).ToUnixTimeSeconds(),
@@ -58,7 +64,7 @@ public class SplunkHecLogExporter : BaseExporter<LogRecord>
         }
         catch (Exception ex)
         {
-            Console.Error.WriteLine($"Error exporting logs to Splunk HEC: {ex.Message}");
+            Console.Error.WriteLine($"Error exporting logs to Splunk HEC log exporter: {ex.Message}");
             return ExportResult.Failure;
         }
     }

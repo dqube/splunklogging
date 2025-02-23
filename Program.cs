@@ -4,6 +4,7 @@ using OpenTelemetry;
 using OpenTelemetry.Logs;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
+using Scalar.AspNetCore;
 using System.Diagnostics;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -23,20 +24,20 @@ var builder = WebApplication.CreateBuilder(args);
 // });
 
 // Configure OpenTelemetry for Tracing
-builder.Services.AddOpenTelemetry()
-    .WithTracing(tracerProviderBuilder =>
-    {
-        tracerProviderBuilder
-            .SetResourceBuilder(ResourceBuilder.CreateDefault().AddService("MyAspNetCoreApp"))
-            .AddAspNetCoreInstrumentation() // Instrument ASP.NET Core requests
-            .AddHttpClientInstrumentation() // Instrument HTTP requests
-            .AddProcessor(new BatchActivityExportProcessor(new SplunkHecExporter(
-                hecEndpoint: "https://your-splunk-hec-endpoint:8088/services/collector",
-                hecToken: "your-hec-token",
-                index: "your-splunk-index", // Specify the Splunk index
-                source: "your-splunk-source" // Specify the Splunk source
-            )));
-    });
+// builder.Services.AddOpenTelemetry()
+//     .WithTracing(tracerProviderBuilder =>
+//     {
+//         tracerProviderBuilder
+//             .SetResourceBuilder(ResourceBuilder.CreateDefault().AddService("MyAspNetCoreApp"))
+//             .AddAspNetCoreInstrumentation() // Instrument ASP.NET Core requests
+//             .AddHttpClientInstrumentation() // Instrument HTTP requests
+//             .AddProcessor(new BatchActivityExportProcessor(new SplunkHecExporter(
+//                 hecEndpoint: "https://your-splunk-hec-endpoint:8088/services/collector",
+//                 hecToken: "your-hec-token",
+//                 index: "your-splunk-index", // Specify the Splunk index
+//                 source: "your-splunk-source" // Specify the Splunk source
+//             )));
+//     });
     
 // Configure OpenTelemetry for Logging
 builder.Logging.AddOpenTelemetry(options =>
@@ -50,9 +51,9 @@ builder.Logging.AddOpenTelemetry(options =>
         index: "your-splunk-index", // Specify the Splunk index
         source: "your-splunk-source" // Specify the Splunk source
     )));
-    options.AddProcessor(new BatchLogRecordExportProcessor(new SQLLogExporter(
-        connectionString: "your-sql-connection-string"
-    )));
+    // options.AddProcessor(new BatchLogRecordExportProcessor(new SQLLogExporter(
+    //     connectionString: "your-sql-connection-string"
+    // )));
 });
 
 // Add services to the container.
@@ -65,6 +66,7 @@ var app = builder.Build();
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
+    app.MapScalarApiReference();
 }
 
 app.UseHttpsRedirection();
@@ -74,8 +76,11 @@ var summaries = new[]
     "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
 };
 
-app.MapGet("/weatherforecast", () =>
+app.MapGet("/weatherforecast", (ILogger<Program> logger) =>
 {
+    
+    logger.LogInformation("Getting weather forecast");
+     logger.LogStartExecutionTime("Starting data processing...");
     var forecast =  Enumerable.Range(1, 5).Select(index =>
         new WeatherForecast
         (
@@ -84,6 +89,7 @@ app.MapGet("/weatherforecast", () =>
             summaries[Random.Shared.Next(summaries.Length)]
         ))
         .ToArray();
+        logger.LogExecutionTime("Finished data processing.");
     return forecast;
 })
 .WithName("GetWeatherForecast");
