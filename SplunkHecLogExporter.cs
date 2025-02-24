@@ -30,12 +30,6 @@ public class SplunkHecLogExporter : BaseExporter<LogRecord>
 
             foreach (var log in batch)
             {
-                string eventId = log.EventId.ToString();
-                string traceId = log.TraceId.ToString();
-                string spanId = log.SpanId.ToString();
-                string methodName = log.Attributes?.FirstOrDefault(x => x.Key == "methodname").Value?.ToString() ?? string.Empty;
-                string filePath = log.Attributes?.FirstOrDefault(x => x.Key == "filePath").Value?.ToString() ?? string.Empty;
-                string className = log.Attributes?.FirstOrDefault(x => x.Key == "classname").Value?.ToString() ?? string.Empty;
                 var splunkEvent = new SplunkEvent
                 {
                     Time = new DateTimeOffset(log.Timestamp).ToUnixTimeSeconds(),
@@ -45,18 +39,23 @@ public class SplunkHecLogExporter : BaseExporter<LogRecord>
                     {
                         { "message", log.FormattedMessage ?? string.Empty },
                         { "severity", log.LogLevel },
-                        { "category", log.CategoryName ?? string.Empty }
+                        { "category", log.CategoryName ?? string.Empty },
+                        { "eventId", log.EventId.Id.ToString() },
+                        { "eventName", log.EventId.Name ?? string.Empty },
+                        { "traceId", log.TraceId.ToString() ?? string.Empty },
+                        { "spanId", log.SpanId.ToString() ?? string.Empty },
+                        { "method", log.Attributes?.FirstOrDefault(x => x.Key == "methodname").Value?.ToString() ?? string.Empty },
+                        { "file", log.Attributes?.FirstOrDefault(x => x.Key == "filePath").Value?.ToString() ?? string.Empty },
+                        { "className", log.Attributes?.FirstOrDefault(x => x.Key == "classname").Value?.ToString() ?? string.Empty },
+                        { "expection", log.Exception?.Message ?? string.Empty }
+
                     }
                 };
 
                 events.Add(splunkEvent);
             }
 
-            var response = _httpClient.PostAsJsonAsync(
-                _hecEndpoint,
-                new { events },
-                new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase }
-            ).Result;
+            var response = _httpClient.PostAsJsonAsync(_hecEndpoint, events).Result;
 
             response.EnsureSuccessStatusCode();
 

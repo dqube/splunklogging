@@ -12,21 +12,58 @@ internal static partial class LoggerExtensions
         in FoodRecallNotice foodRecallNotice);
         [LoggerMessage(LogLevel.Information, "Food `{name}` price changed to `{price}`.")]
     public static partial void FoodPriceChanged(this ILogger logger, string name, double price);
-     [LoggerMessage(LogLevel.Information, "Started `{methodname}` in `{classname}`.")]
-    public static partial void LogInformation(this ILogger logger, string classname, string methodname);
+     [LoggerMessage(LogLevel.Information, "Started `{methodname}` in `{classname} at Line: {linenumber}`.")]
+    public static partial void LogInformation(this ILogger logger, string classname, string methodname, int linenumber);
+    [LoggerMessage(LogLevel.Information, "{requestMethod} {requestUri} {responseStatusCode} {responseContent} {responseTime} {responseMessage} {responseException} {responseStackTrace} {QueryString} {requestContent}")]
+    public static partial void LogServiceCall(
+        this ILogger logger,
+        string requestMethod,
+        string requestUri,
+        string responseStatusCode,
+        string responseContent,
+        string responseTime,
+        string responseMessage,
+        string responseException,
+        string responseStackTrace,
+        string QueryString,
+        string requestContent);
 
     public static void LogInformation(
         this ILogger logger,
         string message,
         LogLevel logLevel = LogLevel.Information,
         [CallerMemberName] string methodName = "",
-        [CallerFilePath] string filePath = "")
+        [CallerFilePath] string filePath = "",
+        [CallerLineNumber] int lineNumber = 0)
     {
        var activity = Activity.Current;
         var className = GetClassName(filePath);
         var method = GetFullMethodName(methodName);
       
-        logger.LogInformation(className, method);
+        logger.LogInformation(className, method, lineNumber);
+    }
+    public static void LogServiceCall(
+        this ILogger logger,
+        string message,
+        string requestMethod,
+        string requestUri,
+        string responseStatusCode,
+        string responseContent,
+        string responseTime,
+        string responseMessage,
+        string responseException,
+        string responseStackTrace,
+        string QueryString,
+        string requestContent,
+        LogLevel logLevel = LogLevel.Information,
+        [CallerMemberName] string methodName = "",
+        [CallerFilePath] string filePath = "",
+        [CallerLineNumber] int lineNumber = 0)
+    {
+       var activity = Activity.Current;
+        var className = GetClassName(filePath);
+        var method = GetFullMethodName(methodName);
+        logger.LogServiceCall(requestMethod, requestUri, responseStatusCode, responseContent, responseTime, responseMessage, responseException, responseStackTrace, QueryString, requestContent);
     }
 
      // [LogProperties("UserId", "Action")]
@@ -36,7 +73,8 @@ internal static partial class LoggerExtensions
         string action,
         LogLevel logLevel = LogLevel.Information,
         [CallerMemberName] string methodName = "",
-        [CallerFilePath] string filePath = "")
+        [CallerFilePath] string filePath = "",
+        [CallerLineNumber] int lineNumber = 0)
     {
         var className = GetClassName(filePath);
         var method = GetFullMethodName(methodName);
@@ -48,7 +86,8 @@ internal static partial class LoggerExtensions
         string message,
         LogLevel logLevel = LogLevel.Information,
         [CallerMemberName] string methodName = "",
-        [CallerFilePath] string filePath = "")
+        [CallerFilePath] string filePath = "",
+        [CallerLineNumber] int lineNumber = 0)
     {
         var className = GetClassName(filePath);
         var method = GetFullMethodName(methodName);
@@ -58,7 +97,7 @@ internal static partial class LoggerExtensions
         var stopwatch = _stopwatches.Where(x=>x.Key.Contains(key)).FirstOrDefault().Value;
         if (stopwatch != null)
         {
-            logger.LogWarning($"Execution timer for {methodName} in {filePath} was already started.");
+            logger.LogWarning($"Execution timer for {method} in {className} at line:{lineNumber} was already started.");
             return;
         }
 
@@ -72,7 +111,8 @@ internal static partial class LoggerExtensions
         string message,
         LogLevel logLevel = LogLevel.Information,
         [CallerMemberName] string methodName = "",
-        [CallerFilePath] string filePath = "")
+        [CallerFilePath] string filePath = "",
+        [CallerLineNumber] int lineNumber = 0)
     {
          var className = GetClassName(filePath);
         var method = GetFullMethodName(methodName);
@@ -81,13 +121,13 @@ internal static partial class LoggerExtensions
         var stopwatch = _stopwatches.Where(x=>x.Key.Contains(key)).FirstOrDefault().Value;
         if (stopwatch == null)
         {
-            logger.LogWarning($"No execution timer found for {methodName} in {filePath}. Call LogStartExecutionTime first.");
+            logger.LogWarning($"No execution timer found for {method} in {className}. at line:{lineNumber}. Call LogStartExecutionTime first.");
             return;
         }
 
         stopwatch.Stop();
         _stopwatches.Remove(key);
-        logger.Log(logLevel, $"Completed {methodName} in {filePath}: {message} | Execution Time: {stopwatch.ElapsedMilliseconds} ms");
+        logger.Log(logLevel, $"Completed {method} in {className}: {message} | Execution Time: {stopwatch.ElapsedMilliseconds} ms");
     }
 
      private static string GetClassName(string filePath)

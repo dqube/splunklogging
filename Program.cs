@@ -61,7 +61,7 @@ builder.Logging.AddOpenTelemetry(options =>
 builder.Services.AddOpenApi();
 
 var app = builder.Build();
-
+app.UseMiddleware<RequestResponseLoggingMiddleware>();
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
