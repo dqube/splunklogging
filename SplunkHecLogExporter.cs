@@ -55,9 +55,9 @@ public class SplunkHecLogExporter : BaseExporter<LogRecord>
                 events.Add(splunkEvent);
             }
 
-            var response = _httpClient.PostAsJsonAsync(_hecEndpoint, events).Result;
+            // var response = _httpClient.PostAsJsonAsync(_hecEndpoint, events).Result;
 
-            response.EnsureSuccessStatusCode();
+            // response.EnsureSuccessStatusCode();
 
             return ExportResult.Success;
         }

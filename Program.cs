@@ -62,6 +62,7 @@ builder.Services.AddOpenApi();
 
 var app = builder.Build();
 app.UseMiddleware<RequestResponseLoggingMiddleware>();
+app.UseMiddleware<ExceptionHandlingMiddleware>();
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
@@ -90,7 +91,7 @@ app.MapGet("/weatherforecast", (ILogger<Program> logger) =>
         ))
         .ToArray();
         logger.LogExecutionTime("Finished data processing.");
-    return forecast;
+    return Results.Ok(forecast);
 })
 .WithName("GetWeatherForecast");
 
